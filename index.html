@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小番茄系图片混淆 · 元气爆棚版 🍅✨</title>
+<style>
+  :root {
+    --bg: #f6f7f5; --bg-soft: #eef0ec; --card: #ffffff;
+    --text: #2b2f2a; --text-soft: #6b7068; --border: #dde1d9;
+    --accent: #5b7f5b; --accent-soft: #e3ece1; --accent-text: #ffffff;
+    --warn-bg: #fff6e5; --warn-border: #f0c987; --warn-text: #8a5a00;
+    --shadow: 0 4px 20px rgba(40, 50, 40, 0.08); --radius: 16px;
+    --banner-bg: linear-gradient(90deg, #e3ece1, #f6f7f5, #e3ece1);
+  }
+  html[data-theme="dark"] {
+    --bg: #151715; --bg-soft: #1d201d; --card: #1f231f;
+    --text: #e6e8e3; --text-soft: #9aa096; --border: #333833;
+    --accent: #8fb88a; --accent-soft: #2a332a; --accent-text: #142014;
+    --warn-bg: #3a2f1a; --warn-border: #7a6229; --warn-text: #f0d59a;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --banner-bg: linear-gradient(90deg, #2a332a, #1f231f, #2a332a);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+  
+  /* 🫧 元气呼吸横幅 */
+  .breath-banner {
+    position: sticky; top: 0; z-index: 50; background: var(--banner-bg); background-size: 200% 100%;
+    animation: bannerFlow 8s ease-in-out infinite; border-bottom: 1px solid var(--border);
+    padding: 12px; text-align: center; overflow: hidden;
+  }
+  .breath-banner span { font-size: 14px; font-weight: 800; color: var(--accent); animation: breath 3.2s ease-in-out infinite; display: inline-block; }
+  @keyframes breath { 0%, 100% { opacity: .5; transform: scale(.98); } 50% { opacity: 1; transform: scale(1.02); } }
+  @keyframes bannerFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  
+  .page { max-width: 760px; margin: 0 auto; padding: 20px 16px 50px; position: relative; z-index: 1; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .brand p { margin: 2px 0 0; font-size: 13px; color: var(--text-soft); font-weight: 600;}
+  
+  /* 🌗 日夜模式切换 */
+  .theme-switch { display: inline-flex; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 4px; gap: 2px; }
+  .theme-switch button { border: none; background: transparent; color: var(--text-soft); font-size: 13px; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: all .25s ease; font-family: inherit; font-weight: 700; }
+  .theme-switch button.active { background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  label { display: block; margin: 14px 0 8px; font-size: 14px; font-weight: 800; color: var(--text); }
+  
+  /* 📂 选图区 */
+  input[type="file"] { width: 100%; padding: 12px; background: var(--bg-soft); border: 2px dashed var(--border); border-radius: 10px; color: var(--text-soft); font-size: 13px; cursor: pointer; font-weight: 600; transition: 0.2s;}
+  input[type="file"]:active { border-color: var(--accent); background: var(--accent-soft); }
+  .format-tip { font-size: 12px; color: var(--warn-text); margin-top: 6px; font-weight: 600;}
+  
+  /* 🎚️ 密钥与次数滑动区 */
+  .key-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  input[type="range"] { flex: 1; min-width: 180px; accent-color: var(--accent); height: 6px; cursor: pointer; }
+  input[type="number"] { width: 100px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 800; outline: none; transition: border-color 0.2s; }
+  input[type="number"]:focus { border-color: var(--accent); }
+  
+  /* ♿ 轮椅按钮 */
+  .wheel-btn { padding: 8px 14px; border: 1px dashed var(--border); background: var(--bg-soft); color: var(--text); border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: inherit; }
+  .wheel-btn:hover, .wheel-btn:active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); transform: scale(0.95); }
+  
+  /* 🔘 操作按钮 */
+  .btns { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+  button.main, button.secondary { padding: 12px 22px; border-radius: 12px; font-size: 15px; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: all .2s ease; font-weight: 800; flex: 1; min-width: 120px; }
+  button.main { background: var(--accent); color: var(--accent-text); box-shadow: 0 4px 12px rgba(91,127,91,0.3); }
+  button.main:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); }
+  button.main:active:not(:disabled) { transform: scale(0.95); }
+  button.secondary { background: var(--bg-soft); color: var(--text); border-color: var(--border); }
+  button.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px);}
+  button.secondary:active:not(:disabled) { transform: scale(0.95); }
+  button:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+  
+  .status { font-size: 13px; font-weight: 700; color: var(--text-soft); margin-top: 16px; min-height: 20px; line-height: 1.5; text-align: center; }
+  
+  /* 🖼️ 预览图区域 */
+  .preview-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+  .preview-box { flex: 1; min-width: 240px; }
+  /* 给标题加个过渡效果，变脸的时候更丝滑 */
+  .preview-box p { margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--text-soft); text-align: center; transition: all 0.3s; }
+  canvas { width: 100%; display: block; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-soft); }
+  
+  /* 🍅 榨干算力浮层 */
+  .tomato-overlay { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; background: rgba(20, 25, 20, 0.6); backdrop-filter: blur(3px); }
+  .tomato-overlay.show { display: flex; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .tomato-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px; text-align: center; box-shadow: var(--shadow); min-width: 260px; max-width: 90vw; }
+  .tomato-spinner { font-size: 48px; display: inline-block; animation: spin 1.5s linear infinite; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  .tomato-text { margin-top: 15px; font-size: 16px; font-weight: 800; color: var(--text); }
+  .tomato-sub { margin-top: 6px; font-size: 13px; color: var(--text-soft); font-weight: 600;}
+
+  /* ==================== 📖 说明书抽屉模块 ==================== */
+  .manual-trigger-btn {
+    display: block; width: 100%; margin-top: 15px; padding: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px;
+    color: var(--accent); font-size: 14px; font-weight: 800; cursor: pointer;
+    transition: 0.2s; text-align: center; font-family: inherit;
+  }
+  .manual-trigger-btn:active { transform: scale(0.97); background: var(--accent-soft); }
+
+  .drawer-overlay {
+    position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(2px);
+  }
+  .drawer-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .drawer-panel {
+    position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100%;
+    background: var(--card); z-index: 101; box-shadow: -5px 0 30px rgba(0,0,0,0.15);
+    transition: right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column;
+  }
+  .drawer-panel.show { right: 0; }
+
+  .drawer-header {
+    padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg-soft);
+  }
+  .drawer-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: var(--accent); }
+  .back-btn {
+    padding: 6px 12px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--text);
+    cursor: pointer; transition: 0.2s; font-family: inherit;
+  }
+  .back-btn:active { transform: scale(0.95); }
+
+  .drawer-content { padding: 20px; overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.7; }
+  .drawer-content h3 { margin: 20px 0 10px; font-size: 16px; color: var(--text); border-left: 4px solid var(--accent); padding-left: 8px;}
+  .drawer-content p { margin-top: 0; margin-bottom: 16px; color: var(--text-soft); }
+  .drawer-content strong { color: var(--text); }
+  .drawer-content code { background: var(--bg-soft); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--accent); }
+  
+  /* 🛡️ 隐私徽章 */
+  .privacy-badge {
+    display: inline-block; background: var(--accent-soft); color: var(--accent);
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 🫧 呼吸横幅 -->
+<div class="breath-banner"><span>以后妈妈再也不用害怕我解不出混淆图啦 🍅✨</span></div>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <h1>小番茄系图片混淆 🍅</h1>
+      <p>元气修复 · 全图不遗漏 🚀</p>
+    </div>
+    <div class="theme-switch">
+      <button id="themeLight" class="active">☀ 日间</button>
+      <button id="themeDark">☾ 夜间</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>1. 喂张图进来 📂</label>
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="format-tip">💡 强烈推荐 PNG 哈；JPG/JPEG 会弹窗碎碎念哦～</div>
+
+    <label>2. 掏出你的密钥 🔑（0 &lt; 密钥 &lt; 1.618）</label>
+    <div class="key-row">
+      <input type="range" id="keyRange" min="0.001" max="1.617" step="0.001" value="1.0">
+      <input type="number" id="keyNumber" min="0.001" max="1.617" step="0.001" value="1.0">
+      <button class="wheel-btn" id="wheelBtn" title="自动填入最常见数值">♿ 轮椅一键填</button>
+    </div>
+
+    <label>3. 套娃混淆次数 🔁（防破译神器）</label>
+    <div class="key-row">
+      <input type="number" id="timesInput" min="1" max="20" step="1" value="1" style="width:100px">
+      <span style="font-size:12px; color:var(--text-soft); font-weight:600;">（反混淆请填相同次数才能还原哦～ 🧠）</span>
+    </div>
+
+    <div class="btns">
+      <button class="main" id="encryptBtn" disabled>🌀 快给我混淆！</button>
+      <button class="secondary" id="decryptBtn" disabled>🔓 变回原图！</button>
+      <button class="secondary" id="downloadBtn" disabled>💾 保存好东西</button>
+    </div>
+
+    <div class="status" id="status">乖乖选一张图片吧，我都等不及啦！🐣</div>
+
+    <button class="manual-trigger-btn" id="manualBtn">📖 点我看高级玩法（使用说明书）</button>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview-box">
+      <p>原图 🖼️</p>
+      <canvas id="originalCanvas"></canvas>
+    </div>
+    <div class="preview-box">
+      <!-- 🎯 给这个标题加个 ID，方便 JS 随时变脸 -->
+      <p id="resultTitle">等待处理的结果 ✨</p>
+      <canvas id="resultCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- 📖 说明书抽屉遮罩 -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<!-- 📖 说明书抽屉主体 -->
+<div class="drawer-panel" id="drawerPanel">
+  <div class="drawer-header">
+    <h2>🍅 混淆大师手册</h2>
+    <button class="back-btn" id="backBtn">⬅ 返回</button>
+  </div>
+  <div class="drawer-content">
+    
+    <div class="privacy-badge">🔒 100% 纯本地运行 · 断网可用</div>
+    <p><strong>本产品全部加密和解密均在本地完成，不会上传到任何服务器，断网也能用，请放心使用，小番茄会全力守护你的隐私 🔒🔒🔒</strong></p>
+    
+    <h3>✨ 核心使用技巧</h3>
+    <p>这工具最牛的地方就是“无损粉碎”。你可以用它把一些<strong>激活码、敏感聊天记录、小秘密截图</strong>混淆后再发到网上，绝对能绕过所有机器审查！</p>
+    <p>只要对方手里有相同的<strong>密钥</strong>和这套代码，把图片反混淆，原图就能<strong>100%完美复原</strong>，连个像素点都不会差！</p>
+
+    <h3>😈 高阶千层套路：反向混淆</h3>
+    <p>大家的混淆能力都很不错，如果直接把图混淆发出去，别人可能觉得“哦，这是张混淆图”。</p>
+    <p><strong>想让他们彻底抓狂吗？试试这套“反向钓鱼法”：</strong></p>
+    <p>1. 先找一张毫无意义的<strong>纯乱码图/风景图</strong>，点一下【🌀 混淆】。</p>
+    <p>2. 再点一下【🔓 反混淆】，得到一张看着像原图，但其实是按乱码排布的“反向混淆图”。</p>
+    <p>3. 把这张图发出去。别人以为是正常混淆图，拿去反混淆，解出来一看——<strong>居然还是一堆乱码！</strong></p>
+    <p>4. 他们绝对会怀疑人生，以为是自己密钥输错了，或者算法坏了，哈哈哈哈哈！</p>
+
+    <h3>🔑 密钥与次数的玄学</h3>
+    <p>密钥范围必须在 <code>0.001 ~ 1.617</code> 之间。差 <code>0.001</code> 都会变成另一张图，千万别记错啦！如果不知道怎么选，直接点<strong>♿ 轮椅一键填</strong>，塞入 <code>1.000</code> 就能走天下！</p>
+    <p><strong>套娃次数（推荐必用）：</strong> 哪怕别人偷到了你的密钥，只要你混淆时设置了比如“3次”，对方反混淆时如果只填了1次，解出来依然是乱码！这就叫“双重保险”！</p>
+
+    <h3>💡 温馨提示</h3>
+    <p>发图片给别人解密的时候，千万别忘了把密钥和<strong>次数</strong>也告诉他（最好用不同渠道发）。不然他看着这堆电子雪花，只能干瞪眼啦～</p>
+
+    <h3>🌍 守护清朗网络</h3>
+    <p><strong>请勿加密任何违反公序良俗的内容并发布到互联网，一起守护清朗网络吧！</strong> 技术是工具，咱们要把它用在保护隐私和分享好东西的正道上哦～ 🌟</p>
+    
+  </div>
+</div>
+
+<!-- 🍅 浮层 -->
+<div class="tomato-overlay" id="tomatoOverlay">
+  <div class="tomato-card">
+    <div class="tomato-spinner">🍅</div>
+    <div class="tomato-text">正在疯狂解析，请耐心等待…</div>
+    <div class="tomato-sub">番茄已榨干全部算力为您服务 🍅💦</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const fileInput = document.getElementById('fileInput');
+  const keyRange = document.getElementById('keyRange');
+  const keyNumber = document.getElementById('keyNumber');
+  const wheelBtn = document.getElementById('wheelBtn');
+  const timesInput = document.getElementById('timesInput');
+  const encryptBtn = document.getElementById('encryptBtn');
+  const decryptBtn = document.getElementById('decryptBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const statusEl = document.getElementById('status');
+  
+  const originalCanvas = document.getElementById('originalCanvas');
+  const resultCanvas = document.getElementById('resultCanvas');
+  // 🎯 获取结果标题的 DOM
+  const resultTitle = document.getElementById('resultTitle');
+  
+  const tomatoOverlay = document.getElementById('tomatoOverlay');
+
+  const manualBtn = document.getElementById('manualBtn');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  const drawerPanel = document.getElementById('drawerPanel');
+  const backBtn = document.getElementById('backBtn');
+
+  let sourceImageData = null;
+  let currentResultData = null;
+  let fileName = 'image';
+  let formatWarned = false;
+  const COMMON_KEY = 1.0;
+
+  // ==================== 📖 说明书抽屉逻辑 ====================
+  function openDrawer() { drawerOverlay.classList.add('show'); drawerPanel.classList.add('show'); }
+  function closeDrawer() { drawerOverlay.classList.remove('show'); drawerPanel.classList.remove('show'); }
+  manualBtn.addEventListener('click', openDrawer);
+  backBtn.addEventListener('click', closeDrawer);
+  drawerOverlay.addEventListener('click', closeDrawer);
+
+  // ==================== 🌗 主题切换 ====================
+  const html = document.documentElement;
+  const themeLight = document.getElementById('themeLight');
+  const themeDark = document.getElementById('themeDark');
+  function applyTheme(mode) {
+    if (mode === 'dark') { 
+      html.setAttribute('data-theme', 'dark'); 
+      themeDark.classList.add('active'); themeLight.classList.remove('active'); 
+    } else { 
+      html.removeAttribute('data-theme'); 
+      themeLight.classList.add('active'); themeDark.classList.remove('active'); 
+    }
+    try { localStorage.setItem('hx-theme', mode); } catch(e){}
+  }
+  themeLight.addEventListener('click', () => applyTheme('light'));
+  themeDark.addEventListener('click', () => applyTheme('dark'));
+  try {
+    const saved = localStorage.getItem('hx-theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) applyTheme('dark');
+    else applyTheme('light');
+  } catch(e) { applyTheme('light'); }
+
+  // ==================== 🎚️ 密钥同步 ====================
+  function syncKeyFromRange() { keyNumber.value = parseFloat(keyRange.value).toFixed(3); }
+  function syncKeyFromNumber() {
+    let v = parseFloat(keyNumber.value);
+    if (isNaN(v)) return;
+    v = Math.min(1.617, Math.max(0.001, v));
+    keyNumber.value = v.toFixed(3); keyRange.value = v;
+  }
+  keyRange.addEventListener('input', syncKeyFromRange);
+  keyNumber.addEventListener('change', syncKeyFromNumber);
+
+  wheelBtn.addEventListener('click', function() {
+    keyRange.value = COMMON_KEY; keyNumber.value = COMMON_KEY.toFixed(3);
+    statusEl.textContent = '♿ 轮椅已发动！一键填入最常见密钥：' + COMMON_KEY.toFixed(3) + '，冲鸭！🚀';
+  });
+
+  // =========================================================
+  // 🛠️ 核心无敌引擎：100% 全覆盖 Gilbert 曲线！
+  // =========================================================
+  function gilbert2d(width, height) {
+    const coords = [];
+    function generate(x, y, w, h) {
+      if (w === 1 && h === 1) { coords.push([x, y]); return; }
+      if (w === 1) { for (let i = 0; i < h; i++) coords.push([x, y + i]); return; }
+      if (h === 1) { for (let i = 0; i < w; i++) coords.push([x + i, y]); return; }
+      const w2 = Math.floor(w / 2); const h2 = Math.floor(h / 2);
+      generate(x, y, w2, h2);
+      generate(x + w2, y, w - w2, h2);
+      generate(x + w2, y + h2, w - w2, h - h2);
+      generate(x, y + h2, w2, h - h2);
+    }
+    generate(0, 0, width, height);
+    return coords;
+  }
+
+  function scramblePixels(imageData, key, direction) {
+    const w = imageData.width; const h = imageData.height;
+    const src = imageData.data; const total = w * h;
+    if (total === 0) return imageData;
+
+    const curve = gilbert2d(w, h);
+    if (curve.length !== total) throw new Error('曲线长度与像素数不符。');
+
+    const golden = (Math.sqrt(5) - 1) / 2;
+    let offset = Math.round(key * golden * total) % total;
+    if (offset < 0) offset += total;
+    const actualOffset = direction === 1 ? offset : (total - offset) % total;
+
+    const out = new Uint8ClampedArray(src.length);
+    for (let i = 0; i < total; i++) {
+      const [sx, sy] = curve[i];
+      const srcIdx = (sy * w + sx) * 4;
+      const j = (i + actualOffset) % total;
+      const [dx, dy] = curve[j];
+      const dstIdx = (dy * w + dx) * 4;
+      out[dstIdx] = src[srcIdx]; out[dstIdx + 1] = src[srcIdx + 1];
+      out[dstIdx + 2] = src[srcIdx + 2]; out[dstIdx + 3] = src[srcIdx + 3];
+    }
+    return new ImageData(out, w, h);
+  }
+
+  // ==================== 📂 图片加载 ====================
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    fileName = file.name.replace(/\.[^.]+$/, '') || 'image';
+    formatWarned = false;
+
+    const isJpeg = /jpe?g$/i.test(file.type) || /\.(jpe?g)$/i.test(file.name);
+    if (isJpeg) {
+      alert('🚨 警告！发现 JPG/JPEG 坏蛋！\n\n它是有损压缩的，像素已经被动过手脚啦，混淆后可能还原不完美哦～\n如果条件允许，强烈建议换成 PNG 小可爱！🥺');
+      formatWarned = true;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        originalCanvas.width = img.width;
+        originalCanvas.height = img.height;
+        const octx = originalCanvas.getContext('2d');
+        octx.drawImage(img, 0, 0);
+        sourceImageData = octx.getImageData(0, 0, img.width, img.height);
+
+        resultCanvas.width = img.width;
+        resultCanvas.height = img.height;
+        const rctx = resultCanvas.getContext('2d');
+        rctx.clearRect(0, 0, img.width, img.height);
+
+        currentResultData = null;
+        encryptBtn.disabled = false;
+        decryptBtn.disabled = false;
+        downloadBtn.disabled = true;
+        
+        // 🎯 重新上传时，把标题重置为等待状态
+        resultTitle.textContent = '等待处理的结果 ✨';
+        
+        statusEl.textContent = (formatWarned ? '⚠️ [有损格式提醒] ' : '✅ ') +
+          '图片已就位！尺寸：' + img.width + ' × ' + img.height + '，快点击混淆开搞吧！🎉';
+      };
+      img.onerror = function() {
+        statusEl.textContent = '😵 哎呀，图片加载失败了，换一张试试？';
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ==================== 🚀 执行操作（带套娃次数） ====================
+  function run(direction) {
+    if (!sourceImageData) return;
+    const key = parseFloat(keyNumber.value);
+    if (isNaN(key) || key <= 0 || key >= 1.618) {
+      statusEl.textContent = '😵 密钥必须在 0 到 1.618 之间哦，别调皮！';
+      return;
+    }
+
+    let times = parseInt(timesInput.value, 10);
+    if (isNaN(times) || times < 1) times = 1;
+    if (times > 20) times = 20;
+    timesInput.value = times;
+
+    tomatoOverlay.classList.add('show');
+    statusEl.textContent = `🍅 番茄开始疯狂榨算力啦（套娃 ${times} 次），坐稳扶好...`;
+
+    setTimeout(() => {
+      try {
+        let currentData = sourceImageData;
+        for (let t = 0; t < times; t++) {
+          currentData = scramblePixels(currentData, key, direction);
+        }
+        
+        currentResultData = currentData;
+        resultCanvas.width = currentData.width;
+        resultCanvas.height = currentData.height;
+        resultCanvas.getContext('2d').putImageData(currentData, 0, 0);
+        downloadBtn.disabled = false;
+        statusEl.textContent = (direction === 1 ? '🎉 混淆大成功！' : '🔓 反混淆大成功！') +
+          ' 密钥 = ' + key.toFixed(3) + '，次数 = ' + times +
+          (formatWarned ? '（注意：源图是有损格式，结果可能带点小瑕疵 ⚠️）' : '') + '，赞！👍';
+
+        // 🎯 见证奇迹的时刻：动态变脸！
+        if (direction === 1) {
+          resultTitle.textContent = '碎成渣的结果 💥';
+          resultTitle.style.color = 'var(--accent)';
+        } else {
+          resultTitle.textContent = '完美复原的原图 🪄';
+          resultTitle.style.color = '#e07a5f'; // 换个暖色，庆祝解密成功
+        }
+
+      } catch (err) {
+        statusEl.textContent = '😱 完蛋，处理失败了：' + err.message;
+      } finally {
+        tomatoOverlay.classList.remove('show');
+      }
+    }, 50);
+  }
+
+  encryptBtn.addEventListener('click', function() { run(1); });
+  decryptBtn.addEventListener('click', function() { run(-1); });
+
+  // ==================== 💾 下载 ====================
+  downloadBtn.addEventListener('click', function() {
+    if (!currentResultData) return;
+    const tmp = document.createElement('canvas');
+    tmp.width = currentResultData.width;
+    tmp.height = currentResultData.height;
+    tmp.getContext('2d').putImageData(currentResultData, 0, 0);
+    const a = document.createElement('a');
+    a.download = fileName + (formatWarned ? '_有损提醒' : '') + '_result.png';
+    a.href = tmp.toDataURL('image/png');
+    a.click();
+    statusEl.textContent = '💾 保存成功！快去相册里瞅瞅你的杰作吧～ ✨';
+  });
+})();
+</script>
+</body>
+</html>
