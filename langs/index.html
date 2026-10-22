@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tomato Image Obfuscator</title>
+<style>
+  :root {
+    --bg: #f6f7f5; --bg-soft: #eef0ec; --card: #ffffff;
+    --text: #2b2f2a; --text-soft: #6b7068; --border: #dde1d9;
+    --accent: #5b7f5b; --accent-soft: #e3ece1; --accent-text: #ffffff;
+    --shadow: 0 4px 20px rgba(40, 50, 40, 0.08); --radius: 12px;
+  }
+  html[data-theme="dark"] {
+    --bg: #151715; --bg-soft: #1d201d; --card: #1f231f;
+    --text: #e6e8e3; --text-soft: #9aa096; --border: #333833;
+    --accent: #8fb88a; --accent-soft: #2a332a; --accent-text: #142014;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+  
+  .page { max-width: 760px; margin: 0 auto; padding: 20px 16px 50px; position: relative; z-index: 1; }
+  
+  /* 顶栏与多语言 */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .brand p { margin: 2px 0 0; font-size: 13px; color: var(--text-soft); font-weight: 600;}
+  
+  .controls-right { display: flex; align-items: center; gap: 12px; }
+  
+  /* 语言选择器 */
+  .lang-selector {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    color: var(--text); cursor: pointer; outline: none; font-family: inherit;
+  }
+  .lang-selector:hover { border-color: var(--accent); }
+  
+  /* 主题切换 */
+  .theme-btn {
+    background: var(--bg-soft); border: 1px solid var(--border); padding: 6px 12px;
+    border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  label { display: block; margin: 14px 0 8px; font-size: 14px; font-weight: 800; color: var(--text); }
+  
+  /* 选图区 */
+  input[type="file"] { width: 100%; padding: 12px; background: var(--bg-soft); border: 2px dashed var(--border); border-radius: 10px; color: var(--text-soft); font-size: 13px; cursor: pointer; font-weight: 600; transition: 0.2s;}
+  .format-tip { font-size: 12px; color: var(--text-soft); margin-top: 6px; font-weight: 600;}
+  
+  /* 输入区 */
+  .key-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  input[type="range"] { flex: 1; min-width: 180px; accent-color: var(--accent); height: 6px; cursor: pointer; }
+  input[type="number"] { width: 100px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-soft); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 800; outline: none; }
+  input[type="number"]:focus { border-color: var(--accent); }
+  
+  .wheel-btn { padding: 8px 14px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .wheel-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 按钮 */
+  .btns { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+  button.main, button.secondary { padding: 12px 22px; border-radius: 8px; font-size: 15px; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: all .2s ease; font-weight: 800; flex: 1; min-width: 120px; }
+  button.main { background: var(--accent); color: var(--accent-text); }
+  button.main:hover:not(:disabled) { filter: brightness(1.08); }
+  button.secondary { background: var(--bg-soft); color: var(--text); border-color: var(--border); }
+  button.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .status { font-size: 13px; font-weight: 700; color: var(--text-soft); margin-top: 16px; min-height: 20px; text-align: center; }
+  
+  /* 预览区 */
+  .preview-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+  .preview-box { flex: 1; min-width: 240px; }
+  .preview-box p { margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--text-soft); text-align: center; }
+  canvas { width: 100%; display: block; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-soft); }
+
+  /* 说明按钮 */
+  .manual-trigger-btn {
+    display: block; width: 100%; margin-top: 15px; padding: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--accent); font-size: 14px; font-weight: 800; cursor: pointer; text-align: center; font-family: inherit;
+  }
+  .manual-trigger-btn:hover { background: var(--accent-soft); }
+
+  /* 抽屉 */
+  .drawer-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+  .drawer-overlay.show { opacity: 1; pointer-events: auto; }
+  .drawer-panel {
+    position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100%;
+    background: var(--card); z-index: 101; box-shadow: -5px 0 30px rgba(0,0,0,0.15);
+    transition: right 0.3s ease; display: flex; flex-direction: column;
+  }
+  .drawer-panel.show { right: 0; }
+  .drawer-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg-soft); }
+  .drawer-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: var(--accent); }
+  .back-btn { padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .drawer-content { padding: 20px; overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.7; }
+  .drawer-content h3 { margin: 20px 0 10px; font-size: 16px; border-left: 4px solid var(--accent); padding-left: 8px;}
+  .drawer-content p { margin-top: 0; margin-bottom: 16px; color: var(--text-soft); }
+  .drawer-content strong { color: var(--text); }
+  .drawer-content code { background: var(--bg-soft); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--accent); }
+
+  /* 浮层 */
+  .tomato-overlay { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; background: rgba(20,25,20,0.6); backdrop-filter: blur(3px); }
+  .tomato-overlay.show { display: flex; }
+  .tomato-card { background: var(--card); border-radius: 12px; padding: 30px; text-align: center; box-shadow: var(--shadow); min-width: 260px; }
+  .tomato-spinner { font-size: 48px; display: inline-block; animation: spin 1.5s linear infinite; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  .tomato-text { margin-top: 15px; font-size: 16px; font-weight: 800; color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <h1 id="el-title">🍅 Tomato Obfuscator</h1>
+      <p id="el-subtitle">Local · Lossless · Reversible</p>
+    </div>
+    <div class="controls-right">
+      <!-- 多语言选择器（文字会根据 JS 自动改变，绝不漏网） -->
+      <select class="lang-selector" id="langSelect" onchange="changeLang(this.value)">
+        <option value="en">🌍 EN</option>
+        <option value="zh">🌍 中文</option>
+        <option value="ja">🌍 日本語</option>
+        <option value="ko">🌍 한국어</option>
+        <option value="es">🌍 ES</option>
+      </select>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label id="el-lbl-img">1. Select Image</label>
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="format-tip" id="el-tip-img">PNG is recommended; JPG will show a warning.</div>
+
+    <label id="el-lbl-key">2. Key (0 &lt; key &lt; 1.618)</label>
+    <div class="key-row">
+      <input type="range" id="keyRange" min="0.001" max="1.617" step="0.001" value="1.0">
+      <input type="number" id="keyNumber" min="0.001" max="1.617" step="0.001" value="1.0">
+      <button class="wheel-btn" id="el-btn-wheel" onclick="setDefaultKey()">Wheel (1.0)</button>
+    </div>
+
+    <label id="el-lbl-times">3. Loop Times</label>
+    <div class="key-row">
+      <input type="number" id="timesInput" min="1" max="20" step="1" value="1" style="width:100px">
+      <span style="font-size:12px; color:var(--text-soft); font-weight:600;" id="el-tip-times">(Must be identical to decrypt)</span>
+    </div>
+
+    <div class="btns">
+      <button class="main" id="el-btn-enc" disabled onclick="run(1)">Obfuscate</button>
+      <button class="secondary" id="el-btn-dec" disabled onclick="run(-1)">Decrypt</button>
+      <button class="secondary" id="el-btn-dl" disabled onclick="download()">Download</button>
+    </div>
+
+    <div class="status" id="status">Ready. Please select an image.</div>
+
+    <button class="manual-trigger-btn" id="el-btn-manual" onclick="openDrawer()">📖 Manual</button>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview-box">
+      <p id="el-lbl-orig">Original</p>
+      <canvas id="originalCanvas"></canvas>
+    </div>
+    <div class="preview-box">
+      <p id="resultTitle">Result</p>
+      <canvas id="resultCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- 说明书抽屉 -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawerPanel">
+  <div class="drawer-header">
+    <h2 id="el-man-title">📖 Manual</h2>
+    <button class="back-btn" onclick="closeDrawer()" id="el-man-back">Back</button>
+  </div>
+  <div class="drawer-content">
+    <div style="background:var(--accent-soft); color:var(--accent); padding:6px 10px; border-radius:6px; font-weight:800; font-size:12px; display:inline-block; margin-bottom:12px;" id="el-man-badge">100% Local & Offline</div>
+    <p><strong id="el-man-priv">All encryption and decryption are done locally. No servers are involved. Tomato protects your privacy!</strong></p>
+    
+    <h3 id="el-man-h1">✨ Core Tips</h3>
+    <p id="el-man-p1">Use this to hide sensitive screenshots or secret codes before posting online. It bypasses machine reviews. With the right key, the original is perfectly restored.</p>
+    
+    <h3 id="el-man-h2">😈 Advanced Trick</h3>
+    <p id="el-man-p2">1. Take a meaningless image and Obfuscate it.</p>
+    <p id="el-man-p3">2. Decrypt it to get a "reverse-obfuscated" image.</p>
+    <p id="el-man-p4">3. Post it. Others will try to decrypt it and get another layer of garbage! Drive them crazy.</p>
+    
+    <h3 id="el-man-h3">🔑 Key & Loops</h3>
+    <p id="el-man-p5">Key must be between 0.001 and 1.617. Missing by 0.001 makes it unreadable. Loop Times is a double-lock: if you encrypt 3 times, you must decrypt 3 times.</p>
+    
+    <h3 id="el-man-h4">🌍 Clean Internet</h3>
+    <p id="el-man-p6">Please do not use this for illegal content. Protect privacy, keep the internet clean!</p>
+  </div>
+</div>
+
+<!-- 浮层 -->
+<div class="tomato-overlay" id="tomatoOverlay">
+  <div class="tomato-card">
+    <div class="tomato-spinner">🍅</div>
+    <div class="tomato-text" id="el-loading">Processing...</div>
+  </div>
+</div>
+
+<script>
+/* ==================== 🌍 多语言数据字典（全 Emoji 终极回归版） ==================== */
+const i18n = {
+  en: {
+    title: "🍅 Tomato Obfuscator", subtitle: "Local · Lossless · Reversible",
+    lblImg: "1. Select Image", tipImg: "PNG is recommended; JPG will show a warning.",
+    lblKey: "2. Key (0 < key < 1.618)", btnWheel: "♿ Wheel (1.0)",
+    lblTimes: "3. Loop Times", tipTimes: "(Must be identical to decrypt)",
+    btnEnc: "🌀 Obfuscate", btnDec: "🔓 Decrypt", btnDl: "💾 Download",
+    btnManual: "📖 Manual", lblOrig: "Original 🖼️",
+    statusInit: "Ready. Please select an image.",
+    statusReady: "Image loaded ({w}x{h}). Ready to obfuscate!",
+    statusJpg: "[Lossy Format] JPG detected. Result might be slightly inaccurate.",
+    statusBusy: "Crunching pixels... (Loop: {t})",
+    statusEncDone: "Obfuscated! Key={k}, Times={t}",
+    statusDecDone: "Decrypted! Key={k}, Times={t}",
+    statusErr: "Error: {e}",
+    resWait: "Waiting for result... ✨", resEnc: "Obfuscated Result 💥", resDec: "Decrypted Original 🪄",
+    alertJpg: "Warning: Lossy JPG detected. For perfect results, please use PNG.",
+    manTitle: "📖 Manual", manBack: "⬅ Back",
+    manBadge: "🔒 100% Local & Offline",
+    manPriv: "All encryption and decryption are done locally. No servers are involved. Tomato protects your privacy! 🔒🔒🔒",
+    manH1: "✨ Core Tips",
+    manP1: "Use this to hide sensitive screenshots or secret codes before posting online. It bypasses machine reviews. With the right key, the original is perfectly restored.",
+    manH2: "😈 Advanced Trick",
+    manP2: "1. Take a meaningless image and Obfuscate it.",
+    manP3: "2. Decrypt it to get a 'reverse-obfuscated' image.",
+    manP4: "3. Post it. Others will try to decrypt it and get another layer of garbage! Drive them crazy.",
+    manH3: "🔑 Key & Loops",
+    manP5: "Key must be between 0.001 and 1.617. Missing by 0.001 makes it unreadable. Loop Times is a double-lock: if you encrypt 3 times, you must decrypt 3 times.",
+    manH4: "🌍 Clean Internet",
+    manP6: "Please do not use this for illegal content. Protect privacy, keep the internet clean!"
+  },
+  zh: {
+    title: "🍅 小番茄混淆器", subtitle: "本地 · 无损 · 可逆",
+    lblImg: "1. 选择图片 📂", tipImg: "推荐使用 PNG；JPG/JPEG 会显示有损警告。",
+    lblKey: "2. 密钥 🔑 (0 < 密钥 < 1.618)", btnWheel: "♿ 轮椅一键填",
+    lblTimes: "3. 套娃次数 🔁", tipTimes: "（反混淆请填相同次数）",
+    btnEnc: "🌀 快给我混淆！", btnDec: "🔓 变回原图！", btnDl: "💾 保存好东西",
+    btnManual: "📖 点我看高级玩法", lblOrig: "原图 🖼️",
+    statusInit: "乖乖选一张图片吧，我都等不及啦！🐣",
+    statusReady: "图片已就位 ({w}x{h})。快点击混淆开搞吧！🎉",
+    statusJpg: "[有损格式提醒] ⚠️ 检测到 JPG，结果可能不完美。",
+    statusBusy: "🍅 番茄正在疯狂榨算力... (套娃: {t})",
+    statusEncDone: "🎉 混淆大成功！密钥={k}, 次数={t}",
+    statusDecDone: "🔓 反混淆大成功！密钥={k}, 次数={t}",
+    statusErr: "😱 处理出错：{e}",
+    resWait: "等待处理的结果 ✨", resEnc: "碎成渣的结果 💥", resDec: "完美复原的原图 🪄",
+    alertJpg: "🚨 警告！发现 JPG/JPEG 坏蛋！\n\n有损压缩可能影响还原效果，建议换成 PNG 哦～",
+    manTitle: "📖 混淆大师手册", manBack: "⬅ 返回",
+    manBadge: "🔒 100% 纯本地运行 · 断网可用",
+    manPriv: "本产品全部加密和解密均在本地完成，不会上传到任何服务器，断网也能用，请放心使用，小番茄会全力守护你的隐私 🔒🔒🔒",
+    manH1: "✨ 核心使用技巧",
+    manP1: "这工具最牛的地方就是“无损粉碎”。你可以用它把一些激活码、敏感聊天记录混淆后再发到网上，绝对能绕过所有机器审查！只要对方手里有相同的密钥，原图就能100%完美复原！",
+    manH2: "😈 高阶千层套路",
+    manP2: "1. 先找一张毫无意义的纯乱码图/风景图，点一下【混淆】。",
+    manP3: "2. 再点一下【反混淆】，得到一张看着像原图，但其实是按乱码排布的“反向混淆图”。",
+    manP4: "3. 把这张图发出去。别人以为是正常混淆图，拿去反混淆，解出来一看——居然还是一堆乱码！直接怀疑人生！",
+    manH3: "🔑 密钥与次数的玄学",
+    manP5: "密钥范围必须在 0.001 ~ 1.617 之间。差 0.001 都会变成另一张图，千万别记错啦！套娃次数更是双重保险，混淆了3次，反混淆也必须填3次！",
+    manH4: "🌍 守护清朗网络",
+    manP6: "请勿加密任何违反公序良俗的内容并发布到互联网，一起守护清朗网络吧！"
+  },
+  ja: {
+    title: "🍅 トマト画像難読化ツール", subtitle: "ローカル · ロスレス · 可逆",
+    lblImg: "1. 画像を選択 📂", tipImg: "PNG推奨。JPGは警告が出ます。",
+    lblKey: "2. キー 🔑 (0 < key < 1.618)", btnWheel: "♿ デフォルト (1.0)",
+    lblTimes: "3. 繰り返し回数 🔁", tipTimes: "（復号時は同じ回数を入力）",
+    btnEnc: "🌀 難読化する！", btnDec: "🔓 復号する！", btnDl: "💾 保存する",
+    btnManual: "📖 マニュアル", lblOrig: "元の画像 🖼️",
+    statusInit: "準備完了。画像を選択してください。🐣",
+    statusReady: "画像読み込み完了 ({w}x{h})。🎉",
+    statusJpg: "[非可逆圧縮] JPGを検出。結果が不正確になる可能性があります。⚠️",
+    statusBusy: "🍅 処理中... (回数: {t})",
+    statusEncDone: "🎉 難読化完了！キー={k}, 回数={t}",
+    statusDecDone: "🔓 復号完了！キー={k}, 回数={t}",
+    statusErr: "😱 エラー: {e}",
+    resWait: "結果を待機中... ✨", resEnc: "粉砕された結果 💥", resDec: "完全復元された元画像 🪄",
+    alertJpg: "🚨 警告！JPGが検出されました。\nロスレス圧縮のため、PNGの使用を強く推奨します。",
+    manTitle: "📖 マスターへの道", manBack: "⬅ 戻る",
+    manBadge: "🔒 100% ローカル実行 · オフライン対応",
+    manPriv: "すべての処理はローカルで行われ、サーバーには送信されません。プライバシーは完全に守られます 🔒🔒🔒",
+    manH1: "✨ コアテクニック",
+    manP1: "機密性の高いスクリーンショットをネットに上げる前にこれで隠せます。適切なキーがあれば100%元通りに復元できます。",
+    manH2: "😈 上級テクニック：逆難読化",
+    manP2: "1. 意味のない画像を【難読化】します。",
+    manP3: "2. それを【復号】して「逆難読化画像」を作ります。",
+    manP4: "3. それを投稿します。他の人が復号してもゴミデータしか出てこず、混乱させられます！",
+    manH3: "🔑 キーと回数の重要性",
+    manP5: "キーは 0.001 ～ 1.617 の間で指定します。0.001の違いで全く別の画像になります。回数はダブルロックです（3回隠したら3回復号が必要）。",
+    manH4: "🌍 クリーンなネット環境",
+    manP6: "違法なコンテンツには使用しないでください。プライバシーを守り、ネットを清潔に保ちましょう！"
+  },
+  ko: {
+    title: "🍅 토마토 이미지 난독화 도구", subtitle: "로컬 · 무손실 · 가역",
+    lblImg: "1. 이미지 선택 📂", tipImg: "PNG를 권장합니다. JPG는 경고가 표시됩니다.",
+    lblKey: "2. 키 🔑 (0 < key < 1.618)", btnWheel: "♿ 기본값 (1.0)",
+    lblTimes: "3. 반복 횟수 🔁", tipTimes: "（복호화 시 동일한 횟수 입력）",
+    btnEnc: "🌀 난독화 시작!", btnDec: "🔓 복호화 시작!", btnDl: "💾 저장하기",
+    btnManual: "📖 매뉴얼", lblOrig: "원본 🖼️",
+    statusInit: "준비 완료. 이미지를 선택하세요. 🐣",
+    statusReady: "이미지 로드 완료 ({w}x{h})。🎉",
+    statusJpg: "[손실 압축] JPG 감지됨. 결과가 부정확할 수 있습니다. ⚠️",
+    statusBusy: "🍅 처리 중... (반복: {t})",
+    statusEncDone: "🎉 난독화 완료! 키={k}, 횟수={t}",
+    statusDecDone: "🔓 복호화 완료! 키={k}, 횟수={t}",
+    statusErr: "😱 오류: {e}",
+    resWait: "결과 대기 중... ✨", resEnc: "산산조각난 결과 💥", resDec: "완벽 복원된 원본 🪄",
+    alertJpg: "🚨 경고! JPG가 감지되었습니다。\n무손실 복원을 위해 PNG 사용을 강력히 권장합니다.",
+    manTitle: "📖 마스터 매뉴얼", manBack: "⬅ 뒤로",
+    manBadge: "🔒 100% 로컬 실행 · 오프라인 사용 가능",
+    manPriv: "모든 암호화 및 복호화는 로컬에서 이루어지며 서버로 전송되지 않습니다. 토마토가 개인정보를 철저히 보호합니다! 🔒🔒🔒",
+    manH1: "✨ 핵심 팁",
+    manP1: "민감한 스크린샷이나 비밀 코드를 인터넷에 게시하기 전에 숨기는 데 사용하세요. 올바른 키만 있으면 100% 완벽하게 복원됩니다.",
+    manH2: "😈 고급 트릭: 역난독화",
+    manP2: "1. 의미 없는 이미지를 [난독화]합니다.",
+    manP3: "2. 다시 [복호화]하여 '역난독화'된 이미지를 얻습니다.",
+    manP4: "3. 이 이미지를 게시합니다. 다른 사람들이 복호화를 시도하면 쓰레기 데이터만 나와 혼란에 빠집니다!",
+    manH3: "🔑 키와 횟수의 중요성",
+    manP5: "키는 0.001에서 1.617 사이여야 합니다. 0.001만 차이 나도 완전히 다른 이미지가 됩니다. 반복 횟수는 이중 잠금장치입니다 (3회 잠그면 3회 풀어야 함).",
+    manH4: "🌍 깨끗한 인터넷",
+    manP6: "불법적인 콘텐츠에는 사용하지 마세요. 개인정보를 보호하고 인터넷을 깨끗하게 유지합시다!"
+  },
+  es: {
+    title: "🍅 Ofuscador de Imágenes Tomato", subtitle: "Local · Sin pérdida · Reversible",
+    lblImg: "1. Seleccionar Imagen 📂", tipImg: "Se recomienda PNG; JPG mostrará una advertencia.",
+    lblKey: "2. Clave 🔑 (0 < clave < 1.618)", btnWheel: "♿ Por defecto (1.0)",
+    lblTimes: "3. Veces (Bucle) 🔁", tipTimes: "(Debe ser idéntico para descifrar)",
+    btnEnc: "🌀 ¡Ofuscar!", btnDec: "🔓 ¡Descifrar!", btnDl: "💾 Descargar",
+    btnManual: "📖 Manual", lblOrig: "Original 🖼️",
+    statusInit: "Listo. Por favor, selecciona una imagen. 🐣",
+    statusReady: "Imagen cargada ({w}x{h}). ¡Listo para ofuscar! 🎉",
+    statusJpg: "[Formato con pérdida] JPG detectado. El resultado podría ser inexacto. ⚠️",
+    statusBusy: "🍅 Procesando píxeles... (Bucle: {t})",
+    statusEncDone: "🎉 ¡Ofuscado! Clave={k}, Veces={t}",
+    statusDecDone: "🔓 ¡Descifrado! Clave={k}, Veces={t}",
+    statusErr: "😱 Error: {e}",
+    resWait: "Esperando resultado... ✨", resEnc: "Resultado Ofuscado 💥", resDec: "Original Descifrado 🪄",
+    alertJpg: "🚨 ¡Advertencia! JPG detectado.\nSe recomienda encarecidamente usar PNG para una restauración perfecta.",
+    manTitle: "📖 Manual del Maestro", manBack: "⬅ Volver",
+    manBadge: "🔒 100% Local · Funciona Sin Conexión",
+    manPriv: "Toda la encriptación y desencriptación se realiza localmente. Sin servidores. ¡Tomato protege tu privacidad! 🔒🔒🔒",
+    manH1: "✨ Consejos Principales",
+    manP1: "Úsalo para ocultar capturas de pantalla sensibles antes de publicarlas. Con la clave correcta, el original se restaura perfectamente.",
+    manH2: "😈 Truco Avanzado",
+    manP2: "1. Toma una imagen sin sentido y Ofúscala.",
+    manP3: "2. Descífrala para obtener una imagen 'inversamente ofuscada'.",
+    manP4: "3. Publícala. ¡Otros intentarán descifrarla y obtendrán otra capa de basura! Vuelvelos locos.",
+    manH3: "🔑 Clave y Bucles",
+    manP5: "La clave debe estar entre 0.001 y 1.617. Un error de 0.001 lo hace ilegible. Las veces de bucle son un doble candado: si encriptas 3 veces, debes desencriptar 3 veces.",
+    manH4: "🌍 Internet Limpio",
+    manP6: "No utilices esto para contenido ilegal. ¡Protege la privacidad y mantén Internet limpio!"
+  }
+};
+
+let currentLang = 'en';
+
+/* ==================== 🌍 语言切换逻辑（这回真的一个都不漏了！） ==================== */
+function applyLanguage(lang) {
+  currentLang = lang;
+  const dict = i18n[lang];
+  
+  // 1. 替换带 ID 的所有界面元素
+  document.getElementById('el-title').textContent = dict.title;
+  document.getElementById('el-subtitle').textContent = dict.subtitle;
+  document.getElementById('el-lbl-img').textContent = dict.lblImg;
+  document.getElementById('el-tip-img').textContent = dict.tipImg;
+  document.getElementById('el-lbl-key').textContent = dict.lblKey;
+  document.getElementById('el-btn-wheel').textContent = dict.btnWheel; 
+  document.getElementById('el-lbl-times').textContent = dict.lblTimes;
+  document.getElementById('el-tip-times').textContent = dict.tipTimes;
+  document.getElementById('el-btn-enc').textContent = dict.btnEnc; 
+  document.getElementById('el-btn-dec').textContent = dict.btnDec;
+  document.getElementById('el-btn-dl').textContent = dict.btnDl;
+  document.getElementById('el-btn-manual').textContent = dict.btnManual;
+  document.getElementById('el-lbl-orig').textContent = dict.lblOrig;
+  
+  // 2. 替换说明书抽屉
+  document.getElementById('el-man-title').textContent = dict.manTitle;
+  document.getElementById('el-man-back').textContent = dict.manBack;
+  document.getElementById('el-man-badge').textContent = dict.manBadge;
+  document.getElementById('el-man-priv').textContent = dict.manPriv;
+  document.getElementById('el-man-h1').textContent = dict.manH1;
+  document.getElementById('el-man-p1').textContent = dict.manP1;
+  document.getElementById('el-man-h2').textContent = dict.manH2;
+  document.getElementById('el-man-p2').textContent = dict.manP2;
+  document.getElementById('el-man-p3').textContent = dict.manP3;
+  document.getElementById('el-man-p4').textContent = dict.manP4;
+  document.getElementById('el-man-h3').textContent = dict.manH3;
+  document.getElementById('el-man-p5').textContent = dict.manP5;
+  document.getElementById('el-man-h4').textContent = dict.manH4;
+  document.getElementById('el-man-p6').textContent = dict.manP6;
+
+  // 3. 更新浮层加载文字
+  document.getElementById('el-loading').textContent = dict.statusBusy.replace('{t}', document.getElementById('timesInput').value);
+
+  // 4. 恢复状态和标题（如果当前没有在转圈）
+  if (!document.getElementById('tomatoOverlay').classList.contains('show')) {
+    const statusEl = document.getElementById('status');
+    if (!sourceImageData) {
+      statusEl.textContent = dict.statusInit;
+    } else if (!currentResultData) {
+       statusEl.textContent = dict.statusReady.replace('{w}', originalCanvas.width).replace('{h}', originalCanvas.height);
+    }
+
+    const resTitle = document.getElementById('resultTitle');
+    if (resTitle.textContent.includes('💥') || resTitle.textContent.includes('Ofuscado') || resTitle.textContent.includes('粉砕') || resTitle.textContent.includes('산산') || resTitle.textContent.includes('Obfuscated')) {
+      resTitle.textContent = dict.resEnc;
+    } else if (resTitle.textContent.includes('🪄') || resTitle.textContent.includes('Descifrado') || resTitle.textContent.includes('復元') || resTitle.textContent.includes('복원') || resTitle.textContent.includes('Decrypted')) {
+      resTitle.textContent = dict.resDec;
+    } else {
+      resTitle.textContent = dict.resWait;
+    }
+  }
+}
+
+function changeLang(lang) {
+  applyLanguage(lang);
+  document.getElementById('langSelect').value = lang;
+}
+
+/* ==================== 🌗 主题切换 ==================== */
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.removeAttribute('data-theme');
+    btn.textContent = '☀️';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = '🌙';
+  }
+}
+
+/* ==================== 📖 抽屉逻辑 ==================== */
+function openDrawer() { document.getElementById('drawerOverlay').classList.add('show'); document.getElementById('drawerPanel').classList.add('show'); }
+function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('show'); document.getElementById('drawerPanel').classList.remove('show'); }
+
+/* ==================== 🍅 核心引擎逻辑 ==================== */
+const fileInput = document.getElementById('fileInput');
+const keyRange = document.getElementById('keyRange');
+const keyNumber = document.getElementById('keyNumber');
+const timesInput = document.getElementById('timesInput');
+const encryptBtn = document.getElementById('el-btn-enc');
+const decryptBtn = document.getElementById('el-btn-dec');
+const downloadBtn = document.getElementById('el-btn-dl');
+const statusEl = document.getElementById('status');
+const originalCanvas = document.getElementById('originalCanvas');
+const resultCanvas = document.getElementById('resultCanvas');
+const resultTitle = document.getElementById('resultTitle');
+const tomatoOverlay = document.getElementById('tomatoOverlay');
+
+let sourceImageData = null;
+let currentResultData = null;
+let fileName = 'image';
+let formatWarned = false;
+
+function setDefaultKey() {
+  keyRange.value = 1.0;
+  keyNumber.value = "1.000";
+}
+
+keyRange.addEventListener('input', () => { keyNumber.value = parseFloat(keyRange.value).toFixed(3); });
+keyNumber.addEventListener('change', () => {
+  let v = parseFloat(keyNumber.value);
+  if (isNaN(v) || v <= 0 || v >= 1.618) v = 1.0;
+  keyNumber.value = v.toFixed(3);
+  keyRange.value = v;
+});
+
+// Gilbert 曲线算法
+function gilbert2d(width, height) {
+  const coords = [];
+  function generate(x, y, w, h) {
+    if (w === 1 && h === 1) { coords.push([x, y]); return; }
+    if (w === 1) { for (let i = 0; i < h; i++) coords.push([x, y + i]); return; }
+    if (h === 1) { for (let i = 0; i < w; i++) coords.push([x + i, y]); return; }
+    const w2 = Math.floor(w / 2); const h2 = Math.floor(h / 2);
+    generate(x, y, w2, h2);
+    generate(x + w2, y, w - w2, h2);
+    generate(x + w2, y + h2, w - w2, h - h2);
+    generate(x, y + h2, w2, h - h2);
+  }
+  generate(0, 0, width, height);
+  return coords;
+}
+
+function scramblePixels(imageData, key, direction) {
+  const w = imageData.width; const h = imageData.height;
+  const src = imageData.data; const total = w * h;
+  if (total === 0) return imageData;
+
+  const curve = gilbert2d(w, h);
+  if (curve.length !== total) throw new Error('Curve size mismatch.');
+
+  const golden = (Math.sqrt(5) - 1) / 2;
+  let offset = Math.round(key * golden * total) % total;
+  if (offset < 0) offset += total;
+  const actualOffset = direction === 1 ? offset : (total - offset) % total;
+
+  const out = new Uint8ClampedArray(src.length);
+  for (let i = 0; i < total; i++) {
+    const [sx, sy] = curve[i];
+    const srcIdx = (sy * w + sx) * 4;
+    const j = (i + actualOffset) % total;
+    const [dx, dy] = curve[j];
+    const dstIdx = (dy * w + dx) * 4;
+    out[dstIdx] = src[srcIdx]; out[dstIdx + 1] = src[srcIdx + 1];
+    out[dstIdx + 2] = src[srcIdx + 2]; out[dstIdx + 3] = src[srcIdx + 3];
+  }
+  return new ImageData(out, w, h);
+}
+
+fileInput.addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  fileName = file.name.replace(/\.[^.]+$/, '') || 'image';
+  formatWarned = false;
+
+  if (/jpe?g$/i.test(file.type) || /\.(jpe?g)$/i.test(file.name)) {
+    alert(i18n[currentLang].alertJpg);
+    formatWarned = true;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      originalCanvas.width = img.width;
+      originalCanvas.height = img.height;
+      originalCanvas.getContext('2d').drawImage(img, 0, 0);
+      sourceImageData = originalCanvas.getContext('2d').getImageData(0, 0, img.width, img.height);
+
+      resultCanvas.width = img.width;
+      resultCanvas.height = img.height;
+      resultCanvas.getContext('2d').clearRect(0, 0, img.width, img.height);
+
+      currentResultData = null;
+      encryptBtn.disabled = false;
+      decryptBtn.disabled = false;
+      downloadBtn.disabled = true;
+      
+      resultTitle.textContent = i18n[currentLang].resWait;
+      
+      let statusMsg = i18n[currentLang].statusReady.replace('{w}', img.width).replace('{h}', img.height);
+      if (formatWarned) statusMsg = i18n[currentLang].statusJpg + " " + statusMsg;
+      statusEl.textContent = statusMsg;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function run(direction) {
+  if (!sourceImageData) return;
+  const key = parseFloat(keyNumber.value);
+  let times = parseInt(timesInput.value, 10);
+  if (isNaN(times) || times < 1) times = 1;
+  if (times > 20) times = 20;
+  timesInput.value = times;
+
+  document.getElementById('el-loading').textContent = i18n[currentLang].statusBusy.replace('{t}', times);
+  tomatoOverlay.classList.add('show');
+
+  setTimeout(() => {
+    try {
+      let currentData = sourceImageData;
+      for (let t = 0; t < times; t++) {
+        currentData = scramblePixels(currentData, key, direction);
+      }
+      
+      currentResultData = currentData;
+      resultCanvas.width = currentData.width;
+      resultCanvas.height = currentData.height;
+      resultCanvas.getContext('2d').putImageData(currentData, 0, 0);
+      downloadBtn.disabled = false;
+      
+      let msgKey = direction === 1 ? 'statusEncDone' : 'statusDecDone';
+      statusEl.textContent = i18n[currentLang][msgKey].replace('{k}', key.toFixed(3)).replace('{t}', times);
+
+      resultTitle.textContent = direction === 1 ? i18n[currentLang].resEnc : i18n[currentLang].resDec;
+    } catch (err) {
+      statusEl.textContent = i18n[currentLang].statusErr.replace('{e}', err.message);
+    } finally {
+      tomatoOverlay.classList.remove('show');
+    }
+  }, 50);
+}
+
+function download() {
+  if (!currentResultData) return;
+  const tmp = document.createElement('canvas');
+  tmp.width = currentResultData.width;
+  tmp.height = currentResultData.height;
+  tmp.getContext('2d').putImageData(currentResultData, 0, 0);
+  const a = document.createElement('a');
+  a.download = fileName + '_result.png';
+  a.href = tmp.toDataURL('image/png');
+  a.click();
+}
+
+// 初始化
+applyLanguage('en');
+</script>
+</body>
+</html>
